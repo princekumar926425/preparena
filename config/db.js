@@ -2,12 +2,15 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    if (!process.env.MONGO_URI) {
+      console.warn("No MONGO_URI found. Continuing without MongoDB.");
+      return;
+    }
 
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error("DB connection error:", error.message);
-    process.exit(1);
+    console.warn("DB connection error, continuing with local fallback:", error.message);
   }
 };
 

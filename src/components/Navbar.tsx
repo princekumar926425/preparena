@@ -1,12 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { Code2, BookOpen, Trophy, LayoutDashboard, Sun, Moon } from "lucide-react";
+import { Code2, BookOpen, Trophy, LayoutDashboard, Sun, Moon, Brain, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { path: "/", label: "Home", icon: LayoutDashboard },
+  { path: "/dashboard", label: "Dashboard", icon: Brain },
   { path: "/dsa", label: "DSA Sheet", icon: Code2 },
   { path: "/subjects", label: "Subjects", icon: BookOpen },
   { path: "/contests", label: "Contests", icon: Trophy },
+  { path: "/admin", label: "Admin", icon: ShieldCheck },
 ];
 
 const Navbar = () => {

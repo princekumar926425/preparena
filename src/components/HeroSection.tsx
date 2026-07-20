@@ -49,6 +49,10 @@ const HeroSection = () => {
             <Button asChild variant="outline" size="lg" className="border-border hover:bg-secondary">
               <Link to="/subjects">Explore Subjects</Link>
             </Button>
+
+            <Button asChild variant="outline" size="lg" className="border-border hover:bg-secondary">
+              <Link to="/videos">Watch Lectures</Link>
+            </Button>
           </div>
 
           {/* Stats */}

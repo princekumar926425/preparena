@@ -2,118 +2,120 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
 
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setMessage("");
+
+    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+      setMessage("Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, confirmPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.message || "Signup failed");
+        return;
+      }
+
+      setMessage("Account created successfully. Please log in.");
+      setTimeout(() => navigate("/login"), 800);
+    } catch (error) {
+      setMessage("Server error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <section className="min-h-screen bg-[#0b1220] flex items-center justify-center">
-      <div className="w-full flex justify-center px-4 ">
-        <div
-          className="w-[420px] 
-          bg-[#1e293b]
-          border-2  border-gray-700 
-          rounded-2xl 
-          shadow-2xl 
-          p-8"
-        >
-          {/* Heading */}
-          <h1 className="text-3xl font-bold text-white mb-8">
-            Create an account
-          </h1>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background grid-bg">
+      <div className="w-full max-w-sm p-6 bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-2xl glow-purple">
+        <h2 className="text-2xl font-bold text-center mb-6 glow-text">
+          Create your account
+        </h2>
 
-          {/* Form */}
-          <form className="space-y-6">
-            {/* Email */}
-            <div>
-              <label className="block text-blue-200 font-medium mb-2">
-                Your email
-              </label>
-              <input
-                type="email"
-                placeholder="name@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 px-4 rounded-lg
-                bg-[#374151]
-                border border-gray-600 text-red-300 placeholder-blue-200
-                focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+        <form onSubmit={handleSignup} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition"
+          />
 
-            {/* Password */}
-            <div>
-              <label className="block text-white font-medium mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-12 px-4 rounded-lg
-                bg-[#374151]
-                border border-gray-600
-                text-white placeholder-gray-400
-                focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition"
+          />
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block font-medium mb-2">
-                Confirm password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full h-12 px-4 rounded-lg
-                bg-[#374151]
-                border border-gray-600
-                text-gray-700 placeholder-gray-800
-                focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition"
+          />
 
-            {/* Terms */}
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="w-4 h-4" />
-              <p className="text-gray-300 text-sm">
-                I accept the{" "}
-                <span className="text-blue-500 hover:underline cursor-pointer">
-                  Terms and Conditions
-                </span>
-              </p>
-            </div>
+          <input
+            type="password"
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition"
+          />
 
-            {/* Button */}
-            <button
-              type="submit"
-              className="w-full h-12 rounded-lg
-              bg-blue-600 hover:bg-blue-700
-              text-white font-semibold transition"
-            >
-              Create an account
-            </button>
-          </form>
+          {message ? (
+            <p className="text-sm text-red-400">{message}</p>
+          ) : null}
 
-          {/* Footer */}
-          <p className="text-gray-400 text-sm mt-6">
-            Already have an account?{" "}
-            <span
-              onClick={() => navigate("/login")}
-              className="text-blue-500 cursor-pointer hover:underline"
-            >
-              Login here
-            </span>
-          </p>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-70"
+          >
+            {loading ? "Creating account..." : "Create account"}
+          </button>
+        </form>
+
+        <p className="text-sm text-center mt-4 text-muted-foreground">
+          Already have an account?{" "}
+          <span
+            onClick={() => navigate("/login")}
+            className="text-primary cursor-pointer hover:underline"
+          >
+            Log in
+          </span>
+        </p>
       </div>
-    </section>
+    </div>
   );
 };
 

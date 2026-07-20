@@ -1,6 +1,8 @@
-import { Cpu, Globe, Box, Database } from "lucide-react";
+import { Cpu, Globe, Box, Database, PlayCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import lectures from "@/data/lectures";
 
 const subjectData = [
   {
@@ -67,6 +69,13 @@ const Subjects = () => {
                     <span className="text-xs font-mono text-muted-foreground">{topic.questions} questions</span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{topic.notes}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {lectures.filter((lecture) => lecture.subject.toLowerCase() === subject.id.toLowerCase()).slice(0, 2).map((lecture) => (
+                      <Link key={lecture.id} to={`/lecture/${lecture.id}`} className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary">
+                        <PlayCircle className="h-4 w-4" /> {lecture.title}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ))}
             </TabsContent>

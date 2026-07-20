@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "id": 1784524826031,
+      "name": "prince",
+      "email": "princekumar926425@gmail.com",
+      "password": "$2b$10$8ZsT9bpCUCyCNCsRcVHcGOzfQWrqQnCgRy9mll2uWOVfZNcSxuEqy",
+      "role": "student"
+    }
+  ],
+  "contests": [
+    {
+      "id": 1,
+      "title": "Placement Sprint",
+      "description": "A live contest for college students and training institutes.",
+      "status": "live",
+      "participants": 128,
+      "duration": "90 min",
+      "problems": 4,
+      "startTime": "Live Now"
+    },
+    {
+      "id": 2,
+      "title": "Mock Coding Challenge",
+      "description": "Practice for TCS, Infosys and Wipro style coding rounds.",
+      "status": "upcoming",
+      "participants": 0,
+      "duration": "75 min",
+      "problems": 3,
+      "startTime": "Next Week"
+    }
+  ],
+  "lectures": []
+}

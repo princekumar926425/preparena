@@ -11,6 +11,10 @@ import Subjects from "./pages/Subjects.tsx";
 import Contests from "./pages/Contests.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Aptitude from "./pages/Aptitude";
+import Lecture from "./pages/Lecture";
+import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
+import Videos from "./pages/Videos";
 
 import Signup from "./components/Signup";
 import Login from "./components/Login";
@@ -63,6 +67,30 @@ const App = () => (
             <Route path="/aptitude" element={
               <ProtectedRoute>
                 <Aptitude />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/lecture/:id" element={
+              <ProtectedRoute>
+                <Lecture />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/videos" element={
+              <ProtectedRoute>
+                <Videos />
               </ProtectedRoute>
             } />
 
