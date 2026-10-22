@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Play, Send } from "lucide-react";
 import Editor from "@monaco-editor/react";
@@ -28,12 +28,92 @@ int main() {
   python: `print("Hello from PrepArena")`,
 };
 
+const twoSumStarterCode: Record<string, string> = {
+  cpp: `#include <iostream>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+int main() {
+    int n, target;
+    cin >> n;
+    vector<int> nums(n);
+    for (int& value : nums) cin >> value;
+    cin >> target;
+
+    unordered_map<int, int> indices;
+    for (int i = 0; i < n; ++i) {
+        int complement = target - nums[i];
+        if (indices.count(complement)) {
+            cout << indices[complement] << " " << i << endl;
+            return 0;
+        }
+        indices[nums[i]] = i;
+    }
+    return 0;
+}`,
+  java: `import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        int n = scanner.nextInt();
+        int[] nums = new int[n];
+        for (int i = 0; i < n; i++) nums[i] = scanner.nextInt();
+        int target = scanner.nextInt();
+
+        Map<Integer, Integer> indices = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            int complement = target - nums[i];
+            if (indices.containsKey(complement)) {
+                System.out.println(indices.get(complement) + " " + i);
+                return;
+            }
+            indices.put(nums[i], i);
+        }
+    }
+}`,
+  python: `import sys
+
+data = list(map(int, sys.stdin.read().split()))
+n = data[0]
+nums = data[1:n + 1]
+target = data[n + 1]
+
+indices = {}
+for i, value in enumerate(nums):
+    complement = target - value
+    if complement in indices:
+        print(indices[complement], i)
+        break
+    indices[value] = i`,
+};
+
+const initialInput = problems.find((item) => item.id === "two-sum")?.examples[0]?.input || "";
+const starterCodeFor = (problemId: string | undefined, lang: string) => (
+  problemId === "two-sum" ? twoSumStarterCode[lang] : defaultCode[lang]
+);
+
 type JudgeResult = {
-  input: string;
-  expectedOutput: string;
-  actualOutput: string;
+  testCase: number;
+  hidden: boolean;
   verdict: string;
-  error: string | null;
+  input?: string;
+  expectedOutput?: string;
+  actualOutput?: string;
+  error?: string | null;
+  time?: string | number | null;
+  memory?: number | null;
+};
+
+type SubmissionResult = {
+  verdict: string;
+  passed: number;
+  total: number;
+  message: string;
+  results: JudgeResult[];
 };
 
 const ProblemDetail = () => {
@@ -41,39 +121,74 @@ const ProblemDetail = () => {
   const problem = problems.find((p) => p.id === id);
 
   const [language, setLanguage] = useState("cpp");
-  const [code, setCode] = useState(defaultCode.cpp);
+  const [code, setCode] = useState(() => starterCodeFor(problem?.id, "cpp"));
+  const [stdin, setStdin] = useState(() => problem?.id === "two-sum" ? initialInput : "");
   const [output, setOutput] = useState("Run your solution to see output here.");
-  const [testResults, setTestResults] = useState<JudgeResult[]>([]);
+  const [outputIsError, setOutputIsError] = useState(false);
+  const [executionDetails, setExecutionDetails] = useState("");
+  const [submission, setSubmission] = useState<SubmissionResult | null>(null);
+  const [activeAction, setActiveAction] = useState<"run" | "submit" | null>(null);
+
+  useEffect(() => {
+    setLanguage("cpp");
+    setCode(starterCodeFor(problem?.id, "cpp"));
+    setStdin(problem?.id === "two-sum" ? initialInput : "");
+    setOutput("Run your solution to see output here.");
+    setOutputIsError(false);
+    setExecutionDetails("");
+    setSubmission(null);
+  }, [problem?.id]);
 
   if (!problem) return <div className="p-8">Problem not found</div>;
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
-    setCode(defaultCode[lang]);
+    setCode(starterCodeFor(problem.id, lang));
+    setSubmission(null);
   };
 
   const runCode = async (mode: "run" | "submit" = "run") => {
-    setOutput(mode === "submit" ? "Submitting..." : "Running...");
-    setTestResults([]);
+    setActiveAction(mode);
+    setOutput(mode === "submit" ? "Submitting solution..." : "Compiling and running...");
+    setOutputIsError(false);
+    setExecutionDetails("");
+    setSubmission(null);
 
     try {
-      const data = await api<{ output?: string; results?: JudgeResult[] }>("/run", {
-        method: "POST",
-        body: JSON.stringify({ code, language, problemId: problem.id, mode: mode === "submit" ? "judge" : "run" }),
-      });
-
-      if (mode === "submit") {
-        setTestResults(data.results || []);
-        setOutput(data.results ? `Judge run complete: ${data.results.filter((r) => r.verdict === "Passed").length}/${data.results.length} passed.` : "No judge results");
+      if (mode === "run") {
+        const data = await api<{
+          verdict: string;
+          stdout: string;
+          stderr: string;
+          time: string | number | null;
+          memory: number | null;
+        }>("/code/run", {
+          method: "POST",
+          body: JSON.stringify({ code, language, problemId: problem.id, stdin }),
+        });
+        setOutput(data.stdout || (data.verdict === "Accepted" ? "(No output)" : data.verdict));
+        setOutputIsError(data.verdict !== "Accepted");
+        setExecutionDetails([
+          data.verdict,
+          data.time !== null ? `Time: ${data.time}s` : "",
+          data.memory !== null ? `Memory: ${data.memory} KB` : "",
+          data.stderr ? `\n${data.stderr}` : "",
+        ].filter(Boolean).join(" · "));
       } else {
-        if (data.output && data.output.trim() !== "") {
-          setOutput(data.output);
-        } else {
-          setOutput("No output");
-        }
+        const data = await api<SubmissionResult>("/code/submit", {
+          method: "POST",
+          body: JSON.stringify({ code, language, problemId: problem.id }),
+        });
+        setSubmission(data);
+        setOutput(data.message);
+        setOutputIsError(data.verdict !== "Accepted");
       }
     } catch (err) {
-      setOutput(`Error running code: ${err instanceof Error ? err.message : String(err)}`);
+      setOutput(err instanceof Error ? err.message : "Unable to contact the code execution service.");
+      setOutputIsError(true);
+      setExecutionDetails("Request failed");
+    } finally {
+      setActiveAction(null);
     }
   };
 
@@ -127,7 +242,9 @@ const ProblemDetail = () => {
             <div>
               <h3 className="text-sm font-semibold">Constraints</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                The platform uses standard input/output style for coding practice. You can solve the problem in your preferred language and test it here.
+                {problem.id === "two-sum"
+                  ? "Input: n, then n space-separated integers, then target (each on its own line). Output: the two distinct indices, separated by whitespace. Run uses the editable stdin below; Submit checks public and hidden cases."
+                  : "Standard input/output execution and grading are not configured for this problem yet."}
               </p>
             </div>
           </div>
@@ -140,19 +257,20 @@ const ProblemDetail = () => {
                 <button
                   key={lang}
                   onClick={() => handleLanguageChange(lang)}
+                  disabled={Boolean(activeAction)}
                   className={`rounded-md px-3 py-1 text-xs ${language === lang ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-secondary'}`}
                 >
-                  {lang}
+                  {lang === "cpp" ? "C++" : lang === "python" ? "Python 3" : "Java"}
                 </button>
               ))}
             </div>
 
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => runCode("run")}>
-                <Play className="mr-2 h-3 w-3" /> Run
+              <Button size="sm" variant="outline" disabled={Boolean(activeAction)} onClick={() => runCode("run")}>
+                <Play className="mr-2 h-3 w-3" /> {activeAction === "run" ? "Running..." : "Run"}
               </Button>
-              <Button size="sm" onClick={() => runCode("submit")}>
-                <Send className="mr-2 h-3 w-3" /> Submit
+              <Button size="sm" disabled={Boolean(activeAction)} onClick={() => runCode("submit")}>
+                <Send className="mr-2 h-3 w-3" /> {activeAction === "submit" ? "Submitting..." : "Submit"}
               </Button>
             </div>
           </div>
@@ -167,26 +285,49 @@ const ProblemDetail = () => {
             />
           </div>
 
-          <div className="h-32 border-t border-border bg-black p-3 font-mono text-sm text-green-400 overflow-auto">
-            {output}
+          {problem.id === "two-sum" && (
+            <label className="border-t border-border bg-background p-3 text-xs text-muted-foreground">
+              Standard input (stdin)
+              <textarea
+                aria-label="Standard input"
+                value={stdin}
+                onChange={(event) => setStdin(event.target.value)}
+                disabled={Boolean(activeAction)}
+                className="mt-2 h-20 w-full resize-y rounded-md border border-border bg-black p-2 font-mono text-xs text-foreground disabled:opacity-70"
+                spellCheck={false}
+              />
+            </label>
+          )}
+
+          <div className="h-32 overflow-auto border-t border-border bg-black p-3 font-mono text-sm text-green-400">
+            {executionDetails && <p className="mb-2 whitespace-pre-wrap text-xs text-muted-foreground">{executionDetails}</p>}
+            <pre className={`whitespace-pre-wrap ${outputIsError ? "text-red-300" : "text-green-400"}`}>{output}</pre>
           </div>
 
-          {testResults.length > 0 && (
-            <div className="border-t border-border bg-slate-950 p-3 text-xs text-slate-200">
-              <h3 className="font-semibold mb-2">Judge Results</h3>
+          {submission && (
+            <div className="max-h-[30vh] overflow-auto border-t border-border bg-slate-950 p-3 text-xs text-slate-200">
+              <h3 className={`mb-2 font-semibold ${submission.verdict === "Accepted" ? "text-emerald-300" : "text-red-300"}`}>
+                Submission: {submission.verdict} · {submission.passed}/{submission.total} test cases passed
+              </h3>
               <div className="space-y-2">
-                {testResults.map((test, index) => (
-                  <div key={index} className="rounded-md border border-slate-700 p-2 bg-slate-900">
+                {submission.results.map((test) => (
+                  <div key={test.testCase} className="rounded-md border border-slate-700 bg-slate-900 p-2">
                     <div className="flex items-center justify-between gap-4">
-                      <span className="font-semibold">Test {index + 1}</span>
-                      <span className={`rounded-full px-2 py-1 text-[11px] ${test.verdict === "Passed" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>
+                      <span className="font-semibold">
+                        Test {test.testCase}{test.hidden ? " (hidden)" : ""}
+                      </span>
+                      <span className={`rounded-full px-2 py-1 text-[11px] ${test.verdict === "Accepted" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>
                         {test.verdict}
                       </span>
                     </div>
-                    <p className="mt-2 text-[11px] text-slate-400"><strong>Input:</strong> {test.input}</p>
-                    <p className="text-[11px] text-slate-400"><strong>Expected:</strong> {test.expectedOutput}</p>
-                    <p className="text-[11px] text-slate-400"><strong>Output:</strong> {test.actualOutput}</p>
-                    {test.error ? <p className="text-[11px] text-red-300"><strong>Error:</strong> {test.error}</p> : null}
+                    {!test.hidden && (
+                      <>
+                        <p className="mt-2 whitespace-pre-wrap text-[11px] text-slate-400"><strong>Input:</strong> {test.input}</p>
+                        <p className="whitespace-pre-wrap text-[11px] text-slate-400"><strong>Expected:</strong> {test.expectedOutput}</p>
+                        <p className="whitespace-pre-wrap text-[11px] text-slate-400"><strong>Output:</strong> {test.actualOutput}</p>
+                      </>
+                    )}
+                    {test.error && <p className="mt-1 whitespace-pre-wrap text-[11px] text-red-300"><strong>Error:</strong> {test.error}</p>}
                   </div>
                 ))}
               </div>

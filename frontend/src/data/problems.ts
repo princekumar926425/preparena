@@ -25,7 +25,7 @@ export const problems: Problem[] = [
     topic: "Arrays", leetcodeUrl: "https://leetcode.com/problems/two-sum/",
     description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.",
     examples: [
-      { input: "nums = [2,7,11,18], target = 9", output: "[0,1]", explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]." },
+      { input: "4\n2 7 11 18\n9", output: "0 1", explanation: "The first line is the array length, the second line contains the integers, and the third line is the target. Print the two indices separated by a space." },
     ],
     editorial: "Use a hash map concept to store each number's index. For each element, check if target - current exists in the map. Time: O(n), Space: O(n).",
     videoUrl: "https://www.youtube.com/embed/KLlXCFG5TnA",

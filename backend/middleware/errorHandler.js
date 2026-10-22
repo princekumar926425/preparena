@@ -16,7 +16,8 @@ export function errorHandler(error, _req, res, _next) {
   if (error?.name === "CastError") {
     return res.status(400).json({ message: "Invalid resource identifier." });
   }
-  res.status(error.status || 500).json({
-    message: error.status ? error.message : "An unexpected server error occurred.",
+  const statusCode = error.status || error.statusCode;
+  res.status(statusCode || 500).json({
+    message: statusCode ? error.message : "An unexpected server error occurred.",
   });
 }
